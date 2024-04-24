@@ -1,0 +1,25 @@
+{
+  "name": "pacman-electron-app",
+  "version": "1.0.0",
+  "description": "Electron Desktop App with Google OAuth that demonstrates PacMan",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vviswanathan7777/pacman-electron-vviswanathan.git"
+  },
+  "keywords": [
+    "Electron",
+    "OAuth",
+    "Google",
+    "Desktop"
+  ],
+  "author": "vviswanathan7777",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "electron": "^5.0.13",
+    "google-auth-library": "^3.1.2"
+  }
+}

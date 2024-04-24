@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base url="./">
+    <template id="item">
+      <div class="item">
+        <div class="thumbnail-container">
+          <img class="thumbnail" src="" />
+        </div>
+        <div class="properties-container">
+          <span class="title"></span>
+        </div>
+      </div>
+    </template>
+    <script src="./script.js"></script>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="logged-out">
+      <button id="start-auth">
+        Login using Google OAUTH
+      </button>
+    </div>
+    <div class="centered">
+      <div class="logged-in">
+        <div id="world"></div>
+        <div id="pacman" style="top:166px; left:228px"></div>
+        <div id="score">0</div>
+        <script>
+            const top_border = 28;
+            const left_border = 29;
+            const bottom_border = 238;
+            const right_border = 240;
+            const cell_width = 4 + (bottom_border - top_border) / 8;
+            const cell_height = 4 + (right_border - left_border) / 8;
+            var pacman_x = 149;
+            var pacman_y = 148;
+            var pacman_x_electron_buffer = 228 - 149;
+            var pacman_y_electron_buffer = 166 - 148;
+            var boundary = 3;
+            var my_Timeout = null;
+            var first_key_press = true;
+            var i_cherry_position;
+            var j_cherry_position;
+            var array_of_open_spaces;
+            var pacman_direction_up = "rotate(-90deg)";
+            var pacman_direction_down = "rotate(90deg)";
+            var pacman_direction_right = "rotate(0deg)";
+            var pacman_direction_left = "scaleX(-1)";
+            var pacman_image_object = document.querySelector("#pacman");
+            var score_object = document.querySelector("#score");
+            
+            function convert_x_position_to_X_index(x_position) {
+                var x_index = Math.round( ( x_position - left_border ) / cell_width ) + 1;
+                return x_index;
+            }
+    
+            function convert_y_position_to_Y_index(y_position) {
+                var y_index = Math.round( ( y_position - top_border) / cell_height ) + 1;
+                return y_index;
+            }
+    
+            var world =[
+                [2,2,2,2,2,2,2,2,2,2],
+                [2,1,1,1,1,1,1,1,1,2],
+                [2,1,2,1,2,1,2,1,2,2],
+                [2,1,1,1,2,1,1,1,1,2],
+                [2,1,2,1,2,2,1,2,1,2],
+                [2,1,1,1,1,0,1,2,1,2],
+                [2,1,2,1,2,1,2,2,1,2],
+                [2,1,2,1,2,1,2,1,4,2],
+                [2,1,1,1,1,1,1,1,1,2],
+                [2,2,2,2,2,2,2,2,2,2]
+            ];
+    
+            var valid_vertice_list = [[pacman_x,pacman_y]];
+    
+            function create_valid_vertice_list() {
+                var vertice_x;
+                var vertice_y;
+    
+                for (var i=1; i < world.length - 1; i++) {
+                    vertice_y = top_border + ( i -1 ) * cell_height;
+                    for (var j=1; j<world[i].length - 1; j++) {
+                        vertice_x = left_border + ( j - 1 ) * cell_width;
+                        new_vertex = [vertice_x, vertice_y];
+                        if ((world[i][j] == 1) || (world[i][j] == 4)) {
+                            valid_vertice_list.push(new_vertex);
+                        } 
+                    }
+                }
+                
+                for (var i = 0; i < valid_vertice_list.length; i++){
+                    console.log("x is " + valid_vertice_list[i][0] + " and y is " +valid_vertice_list[i][1]);
+                }
+            }
+    
+            function check_if_valid() {
+                var valid_x_y = false;
+    
+                valid_list = [];
+    
+                for (var i=0; i < valid_vertice_list.length; i++) {
+                    var left_bound = valid_vertice_list[i][0] - boundary;
+                    var right_bound = valid_vertice_list[i][0] + boundary;
+                    var top_bound = valid_vertice_list[i][1] - boundary;
+                    var bottom_bound = valid_vertice_list[i][1] + boundary;
+                    var x = pacman_x;
+                    var y = pacman_y;
+                    if ( (x >= left_bound) && (x <= right_bound) && (y >= top_bound) && (y <= bottom_bound) ) {
+                        console.log("in conditional");
+                        valid_list.push(i);
+                        valid_x_y = true;
+                        return valid_x_y;
+                    }
+                }
+                return valid_x_y;
+            }
+    
+            function displayWorld() {
+                var output = '';
+                array_of_open_spaces = [];
+                for (var i=0; i<world.length; i++) {
+                    output += "<div class='row'>";
+                    for (var j=0; j<world[i].length; j++) {
+                        // output = output + world[i][j];
+                        if (world[i][j] == 2) {
+                            output += "<div class='brick'></div>";
+                        } else if (world[i][j] == 1) {
+                            output += "<div class='coin'></div>";
+                        } else if (world[i][j] == 0) {
+                            output += "<div class='empty'></div>";
+                            array_of_open_spaces.push([i,j]);
+                        } else if (world[i][j] == 4) {
+                            output += "<div class='cherry'></div>";
+                        } 
+                    }
+                    output += "</div>";
+                }
+    
+                console.log(output);
+                document.getElementById('world').innerHTML = output;
+            }
+    
+            displayWorld();
+            create_valid_vertice_list();
+    
+            function random_timeOut_cherry_creator() {
+                if (!my_Timeout) {
+                    var random_time_out = (Math.floor(Math.random() * 3) + 1 ) * 1000;
+                    console.log(random_time_out);
+                    my_Timeout = setTimeout(display_cherry, random_time_out);
+                }
+            }
+    
+            function display_cherry() {
+                var cherry_position_array_index = Math.floor(Math.random() * array_of_open_spaces.length);
+                var x_index = convert_x_position_to_X_index(pacman_x);
+                var y_index = convert_y_position_to_Y_index(pacman_y);
+                while ((y_index == array_of_open_spaces[cherry_position_array_index][0]) && (x_index == array_of_open_spaces[cherry_position_array_index][1])) {
+                    cherry_position_array_index = Math.floor(Math.random() * array_of_open_spaces.length);
+                }
+                world[array_of_open_spaces[cherry_position_array_index][0]][array_of_open_spaces[cherry_position_array_index][1]] = 4;
+                displayWorld();
+            }
+            
+            document.onkeydown = function(key_got_pressed) {
+                var original_pacman_x = pacman_x;
+                var original_pacman_y = pacman_y;
+                console.log(key_got_pressed.keyCode);
+    
+                if (key_got_pressed.keyCode == 38) {
+                    pacman_y = pacman_y - cell_height;
+                } else if (key_got_pressed.keyCode == 40) {
+                    pacman_y = pacman_y + cell_height;
+                } else if (key_got_pressed.keyCode == 39) {
+                    pacman_x = pacman_x + cell_width;
+                } else if (key_got_pressed.keyCode == 37) {
+                    pacman_x = pacman_x - cell_width;
+                }
+    
+                if (check_if_valid()) {
+                    console.log("valid move");
+                    var value_x = pacman_x + pacman_x_electron_buffer;
+                    var value_y = pacman_y + pacman_y_electron_buffer;
+                    document.getElementById('pacman').style.top = value_y + "px";
+                    document.getElementById('pacman').style.left = value_x + "px";
+                    var x_index = convert_x_position_to_X_index(pacman_x);
+                    var y_index = convert_y_position_to_Y_index(pacman_y);
+                    if (world[y_index][x_index] == 1) {
+                        score_object.innerText = (parseInt(score_object.innerText) + 3).toString();
+                    } else if (world[y_index][x_index] == 4) {
+                        console.log("cherry eaten");
+                        score_object.innerText = (parseInt(score_object.innerText) + 50).toString();
+                        clearTimeout(my_Timeout);
+                        my_Timeout = null;
+                        random_timeOut_cherry_creator();
+                    }
+                    world[y_index][x_index] = 0;
+                    if (key_got_pressed.keyCode == 38) {
+                        pacman_image_object.style.transform = pacman_direction_up;
+                    } else if (key_got_pressed.keyCode == 40) {
+                        pacman_image_object.style.transform = pacman_direction_down;                    
+                    } else if (key_got_pressed.keyCode == 39) {
+                        pacman_image_object.style.transform = pacman_direction_right;
+                    } else if (key_got_pressed.keyCode == 37) {
+                        pacman_image_object.style.transform = pacman_direction_left;
+                    }
+                    displayWorld();
+                } else {
+                    pacman_x = original_pacman_x;
+                    pacman_y = original_pacman_y;
+                }
+                
+            }
+        </script>
+      </div>
+    </div>
+  </body>
+</html>
